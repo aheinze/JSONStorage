@@ -13,11 +13,11 @@
     };
 
     Storage.prototype._store = function(key){
-        ls["storage-"+this.name] = JSON.stringify(this.data);
+        ls.setItem("storage-"+this.name,  JSON.stringify(this.data));
     };
 
     Storage.prototype._data = function(key){
-        this.data = JSON.parse(ls["storage-"+name] ? ls["storage-"+name] : '{}');
+        this.data = JSON.parse(ls.getItem("storage-"+this.name) || '{}');
     };
 
     Storage.prototype.get = function(key, def){
