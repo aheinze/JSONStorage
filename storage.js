@@ -1,23 +1,28 @@
-;(function(win, ls){
+;(function(win){
 
     win.Storage = {
-        "select": function(name){
-            return (new Storage(name));
+        "select": function(name, engine){
+            return (new Storage(name, engine));
         }
     };
 
-    function Storage(name){
+    function Storage(name, engine){
 
-        this.name = name;
+        this.name   = name;
+        this.engine = engine || window.localStorage;
         this._data();
     };
 
     Storage.prototype._store = function(key){
-        ls.setItem("storage-"+this.name,  JSON.stringify(this.data));
+        this.engine.setItem("storage:"+this.name,  JSON.stringify(this.data));
     };
 
     Storage.prototype._data = function(key){
-        this.data = JSON.parse(ls.getItem("storage-"+this.name) || '{}');
+        this.data = JSON.parse(this.engine.getItem("storage:"+this.name) || '{}');
+    };
+
+    Storage.prototype.toString = function(key){
+        return JSON.stringify(this.data);
     };
 
     Storage.prototype.get = function(key, def){
@@ -35,8 +40,9 @@
 
     Storage.prototype.del = function(){
         
-        var keys = arguments,
-            key  = null;
+        var keys    = arguments,
+            key     = null,
+            removed = 0;
 
         for (var i=0;i<keys.length;i++){
 
@@ -44,9 +50,13 @@
 
             if(this.exists(key)){
                 delete this.data[key];
-                this._store();
+                removed++;
             }
         }
+
+        this._store();
+
+        return removed;
     };
 
     Storage.prototype.type = function(key){
@@ -83,6 +93,12 @@
     Storage.prototype.decr = function(key, by){
         var by = by || 1;
         return this.incr(key, (by * -1));
+    };
+
+    /* List methods */
+    
+    Storage.prototype.llen = function(key){
+        return this.get(key, []).length;
     };
 
     Storage.prototype.lpush = function(key, value){
@@ -127,4 +143,122 @@
         return list[index] ? list[index] : null;
     };
 
-})(window, localStorage);
+    /* Hash methods */
+
+    Storage.prototype.hset = function(key, field, value){
+        var set = this.get(key, {});
+
+        set[field] = value;
+        this.set(key, set);
+    };
+
+    Storage.prototype.hget = function(key, field, def){
+        var set = this.get(key, {});
+
+        return set[field] !== undefined ? set[field] : def;
+    };
+
+    Storage.prototype.hgetall = function(key){
+        return this.get(key, {});
+    };
+
+    Storage.prototype.hexists = function(key, field){
+        var set = this.get(key, {});
+
+        return (set[field] !== undefined);
+    };
+
+    Storage.prototype.hkeys = function(key){
+        var set  = this.get(key, {}),
+            keys = [], 
+            name = null;
+
+        for (name in set) {
+            if (set.hasOwnProperty(name)) {
+                keys.push(name);
+            }
+        }
+
+        return keys;
+    };
+
+    Storage.prototype.hvals = function(key){
+        var set  = this.get(key, {}),
+            vals = [], 
+            name = null;
+
+        for (name in set) {
+            if (set.hasOwnProperty(name)) {
+                vals.push(keys[name]);
+            }
+        }
+
+        return vals;
+    };
+
+    Storage.prototype.hlen = function(key){
+        return this.hkeys(key).length;
+    };
+
+    Storage.prototype.hdel = function(key){
+        
+        if(!this.exists(key)) return 0;
+
+        var set     = this.get(key, {}),
+            field   = null,
+            removed = 0;
+
+        for (var i=1;i<arguments.length;i++){
+
+            field = arguments[i];
+
+            if(set[field] !== undefined){
+                delete set[field];
+                removed++;
+            }
+        }
+
+        this.set(key, set);
+
+        return removed;
+    };
+
+    Storage.prototype.hincrby = function(key, field, by){
+        var by      = by || 1,
+            current = Number(this.hget(key, field, 0)),
+            newone  = current+by;
+
+        this.hset(key, field, newone);
+
+        return newone;
+    };
+
+    Storage.prototype.hmget = function(key){
+        var set     = this.get(key, {}),
+            field   = null,
+            values  = [];
+
+        for (var i=1;i<arguments.length;i++){
+            field = arguments[i];
+            values.push(set[field] !== undefined ? set[field]:null);
+        }
+
+        return values;
+    };
+
+    Storage.prototype.hmset = function(key){
+        var set     = this.get(key, {}),
+            field   = null,
+            value   = null;
+
+        for (var i=1;i<arguments.length;i++){
+            field = arguments[i];
+            value = arguments[(i + 1)] ? arguments[(i + 1)]:null;
+            set[field] = value;
+            i = i + 1;
+        }
+
+        this.set(key, set);
+    };
+
+})(window);
