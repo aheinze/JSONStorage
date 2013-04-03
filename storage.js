@@ -1,24 +1,39 @@
-;(function(win){
+/**
+ * Storage.js - a simple storage helper inspired by the redis api.
+ *
+ * @author     Artur Heinze
+ * @copyright  (c) since 2012 Artur Heinze
+ * @license    MIT - http://opensource.org/licenses/MIT
+ * @url        https://github.com/aheinze/Storage.js
+ */
+(function(global){
 
-    win.Storage = {
-        "select": function(name, engine){
-            return (new Storage(name, engine));
+    "use strict";
+
+    global.Storage = {
+        "select": function(name, container){
+            return (new Storage(name, this.containers[container] || this.containers['local']));
+        },
+
+        containers: {
+            'local': localStorage,
+            'session': sessionStorage
         }
     };
 
-    function Storage(name, engine){
+    function Storage(name, container){
 
         this.name   = name;
-        this.engine = engine || window.localStorage;
+        this.container = container;
         this._data();
-    };
+    }
 
     Storage.prototype._store = function(key){
-        this.engine.setItem("storage:"+this.name,  JSON.stringify(this.data));
+        this.container.setItem("storage:"+this.name,  JSON.stringify(this.data));
     };
 
     Storage.prototype._data = function(key){
-        this.data = JSON.parse(this.engine.getItem("storage:"+this.name) || '{}');
+        this.data = JSON.parse(this.container.getItem("storage:"+this.name) || '{}');
     };
 
     Storage.prototype.toString = function(key){
@@ -61,7 +76,7 @@
 
     Storage.prototype.type = function(key){
         
-        var key = this.get(key);
+        key = this.get(key);
 
         if(typeof(key) === 'object'){
             return JSON.stringify(key)[0] === "[" ? "list":"set";
@@ -71,8 +86,10 @@
     };
 
     Storage.prototype.append = function(key, value){
-        var value   = String(value),
-            current = String(this.get(key, "")),
+        
+        value = String(value);
+        
+        var current = String(this.get(key, "")),
             newone  = current+value;
 
         this.set(key, newone);
@@ -81,8 +98,10 @@
     };
 
     Storage.prototype.incr = function(key, by){
-        var by      = by || 1,
-            current = Number(this.get(key, 0)),
+        
+        by = by || 1;
+        
+        var current = Number(this.get(key, 0)),
             newone  = current+by;
 
         this.set(key, newone);
@@ -91,7 +110,7 @@
     };
 
     Storage.prototype.decr = function(key, by){
-        var by = by || 1;
+        by = by || 1;
         return this.incr(key, (by * -1));
     };
 
@@ -224,8 +243,8 @@
     };
 
     Storage.prototype.hincrby = function(key, field, by){
-        var by      = by || 1,
-            current = Number(this.hget(key, field, 0)),
+        by = by || 1;
+        var current = Number(this.hget(key, field, 0)),
             newone  = current+by;
 
         this.hset(key, field, newone);
@@ -261,4 +280,4 @@
         this.set(key, set);
     };
 
-})(window);
+})(this);
