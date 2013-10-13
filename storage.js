@@ -41,10 +41,12 @@
 
      Store.prototype.flushdb = function(){
          
+         var $this = this;
+
          this.data    = {};
          this.expires = {};
 
-         this.store();
+         setTimeout(function(){ $this.store(); }, 0); // async saving!?
 
          return true;
      };
