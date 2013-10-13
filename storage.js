@@ -6,278 +6,350 @@
  * @license    MIT - http://opensource.org/licenses/MIT
  * @url        https://github.com/aheinze/Storage.js
  */
-(function(global){
+ (function(global){
 
-    "use strict";
+     function Store(name, adapter){
 
-    global.Storage = {
-        "select": function(name, container){
-            return (new Storage(name, this.containers[container] || this.containers['local']));
-        },
+        var $this    = this;
 
-        containers: {
-            'local': localStorage,
-            'session': sessionStorage
-        }
-    };
+         this.name    = name;
+         this.adapter = adapter;
+         this.data    = adapter.load(name);
+         this.expires = {};
 
-    function Storage(name, container){
+         setInterval(function(){
 
-        this.name   = name;
-        this.container = container;
-        this._data();
-    }
+            var time = (new Date()).getTime();
 
-    Storage.prototype._store = function(key){
-        this.container.setItem("storage:"+this.name,  JSON.stringify(this.data));
-    };
-
-    Storage.prototype._data = function(key){
-        this.data = JSON.parse(this.container.getItem("storage:"+this.name) || '{}');
-    };
-
-    Storage.prototype.toString = function(key){
-        return JSON.stringify(this.data);
-    };
-
-    Storage.prototype.get = function(key, def){
-        return this.data[key] !== undefined ? this.data[key] : def;
-    };
-
-    Storage.prototype.set = function(key, value){
-        this.data[key] = value;
-        this._store();
-    };
-
-    Storage.prototype.exists = function(key){
-        return this.get(key, "___no___") !== "___no___";
-    };
-
-    Storage.prototype.del = function(){
-        
-        var keys    = arguments,
-            key     = null,
-            removed = 0;
-
-        for (var i=0;i<keys.length;i++){
-
-            key = keys[i];
-
-            if(this.exists(key)){
-                delete this.data[key];
-                removed++;
+            for(var key in $this.expires) {
+                if($this.expires[key] < time) {
+                    delete $this.data[key];
+                    delete $this.expires[key];
+                }
             }
-        }
 
-        this._store();
+         }, 60000);
+     }
 
-        return removed;
-    };
+     Store.prototype.store = function(key){
+         this.adapter.store(this.name, this.data);
+     };
 
-    Storage.prototype.type = function(key){
-        
-        key = this.get(key);
+     Store.prototype.toString = function(key){
+         return JSON.stringify(this.data);
+     };
 
-        if(typeof(key) === 'object'){
-            return JSON.stringify(key)[0] === "[" ? "list":"set";
-        }
+     Store.prototype.flushdb = function(){
+         
+         this.data    = {};
+         this.expires = {};
 
-        return typeof(key);
-    };
+         this.store();
 
-    Storage.prototype.append = function(key, value){
-        
-        value = String(value);
-        
-        var current = String(this.get(key, "")),
-            newone  = current+value;
+         return true;
+     };
 
-        this.set(key, newone);
+     Store.prototype.get = function(key, def){
+         return this.data[key] !== undefined ? this.data[key] : def;
+     };
 
-        return newone.length;
-    };
+     Store.prototype.set = function(key, value){
+         this.data[key] = value;
+         this.store();
+     };
 
-    Storage.prototype.incr = function(key, by){
-        
-        by = by || 1;
-        
-        var current = Number(this.get(key, 0)),
-            newone  = current+by;
+     Store.prototype.setex = function(key, seconds, value){
+         this.set(key, value);
+         this.expire(key, seconds);
+     };
 
-        this.set(key, newone);
+     Store.prototype.expire = function(key, seconds) {
+        if(this.data[key]) this.expires[key] = (new Date()).getTime() + (seconds*1000);
+     };
 
-        return newone;
-    };
+     Store.prototype.exists = function(key){
+         return this.get(key, "___no___") !== "___no___";
+     };
 
-    Storage.prototype.decr = function(key, by){
-        by = by || 1;
-        return this.incr(key, (by * -1));
-    };
+     Store.prototype.del = function(){
+         
+         var keys    = arguments,
+             key     = null,
+             removed = 0;
 
-    /* List methods */
-    
-    Storage.prototype.llen = function(key){
-        return this.get(key, []).length;
-    };
+         for (var i=0;i<keys.length;i++){
 
-    Storage.prototype.lpush = function(key, value){
-        var list = this.get(key, []),
-            ret  = list.unshift(value);
+             key = keys[i];
 
-        this.set(key, list);
-        return ret;
-    };
+             if(this.exists(key)){
+                 delete this.data[key];
 
-    Storage.prototype.rpush = function(key, value){
-        var list = this.get(key, []),
-            ret  = list.push(value);
+                 if(this.expires[key]) {
+                    delete this.expires[key];
+                 }
 
-        this.set(key, list);
-        return ret;
-    };
+                 removed++;
+             }
+         }
 
-    Storage.prototype.lset = function(key, index, value){
-        var list = this.get(key, []);
+         this.store();
 
-        if(index < 0) {
-            index = list.length - Math.abs(index); 
-        }
+         return removed;
+     };
 
-        if (list[index]) {
-            list[index] = value;
-            this.set(key, list);
-            return true;
-        }
+     Store.prototype.type = function(key){
+         
+         key = this.get(key);
 
-        return false;
-    };
+         if(typeof(key) === 'object'){
+             return JSON.stringify(key)[0] === "[" ? "list":"set";
+         }
 
-    Storage.prototype.lindex = function(key, index){
-        var list = this.get(key, []);
+         return typeof(key);
+     };
 
-        if (index < 0) {
-            index = list.length - Math.abs(index); 
-        }
+     Store.prototype.append = function(key, value){
+         
+         value = String(value);
+         
+         var current = String(this.get(key, "")),
+             newone  = current+value;
 
-        return list[index] ? list[index] : null;
-    };
+         this.set(key, newone);
 
-    /* Hash methods */
+         return newone.length;
+     };
 
-    Storage.prototype.hset = function(key, field, value){
-        var set = this.get(key, {});
+     Store.prototype.incr = function(key, by){
+         
+         by = by || 1;
+         
+         var current = Number(this.get(key, 0)),
+             newone  = current+by;
 
-        set[field] = value;
-        this.set(key, set);
-    };
+         this.set(key, newone);
 
-    Storage.prototype.hget = function(key, field, def){
-        var set = this.get(key, {});
+         return newone;
+     };
 
-        return set[field] !== undefined ? set[field] : def;
-    };
+     Store.prototype.decr = function(key, by){
+         by = by || 1;
+         return this.incr(key, (by * -1));
+     };
 
-    Storage.prototype.hgetall = function(key){
-        return this.get(key, {});
-    };
+     /* List methods */
 
-    Storage.prototype.hexists = function(key, field){
-        var set = this.get(key, {});
+     Store.prototype.llen = function(key){
+         return this.get(key, []).length;
+     };
 
-        return (set[field] !== undefined);
-    };
+     Store.prototype.lpush = function(key, value){
+         var list = this.get(key, []),
+             ret  = list.unshift(value);
 
-    Storage.prototype.hkeys = function(key){
-        var set  = this.get(key, {}),
-            keys = [], 
-            name = null;
+         this.set(key, list);
+         return ret;
+     };
 
-        for (name in set) {
-            if (set.hasOwnProperty(name)) {
-                keys.push(name);
-            }
-        }
+     Store.prototype.rpush = function(key, value){
+         var list = this.get(key, []),
+             ret  = list.push(value);
 
-        return keys;
-    };
+         this.set(key, list);
+         return ret;
+     };
 
-    Storage.prototype.hvals = function(key){
-        var set  = this.get(key, {}),
-            vals = [], 
-            name = null;
+     Store.prototype.lset = function(key, index, value){
+         var list = this.get(key, []);
 
-        for (name in set) {
-            if (set.hasOwnProperty(name)) {
-                vals.push(keys[name]);
-            }
-        }
+         if(index < 0) {
+             index = list.length - Math.abs(index); 
+         }
 
-        return vals;
-    };
+         if (list[index]) {
+             list[index] = value;
+             this.set(key, list);
+             return true;
+         }
 
-    Storage.prototype.hlen = function(key){
-        return this.hkeys(key).length;
-    };
+         return false;
+     };
 
-    Storage.prototype.hdel = function(key){
-        
-        if(!this.exists(key)) return 0;
+     Store.prototype.lindex = function(key, index){
+         var list = this.get(key, []);
 
-        var set     = this.get(key, {}),
-            field   = null,
-            removed = 0;
+         if (index < 0) {
+             index = list.length - Math.abs(index); 
+         }
 
-        for (var i=1;i<arguments.length;i++){
+         return list[index] ? list[index] : null;
+     };
 
-            field = arguments[i];
+     /* Hash methods */
 
-            if(set[field] !== undefined){
-                delete set[field];
-                removed++;
-            }
-        }
+     Store.prototype.hset = function(key, field, value){
+         var set = this.get(key, {});
 
-        this.set(key, set);
+         set[field] = value;
+         this.set(key, set);
+     };
 
-        return removed;
-    };
+     Store.prototype.hget = function(key, field, def){
+         var set = this.get(key, {});
 
-    Storage.prototype.hincrby = function(key, field, by){
-        by = by || 1;
-        var current = Number(this.hget(key, field, 0)),
-            newone  = current+by;
+         return set[field] !== undefined ? set[field] : def;
+     };
 
-        this.hset(key, field, newone);
+     Store.prototype.hgetall = function(key){
+         return this.get(key, {});
+     };
 
-        return newone;
-    };
+     Store.prototype.hexists = function(key, field){
+         var set = this.get(key, {});
 
-    Storage.prototype.hmget = function(key){
-        var set     = this.get(key, {}),
-            field   = null,
-            values  = [];
+         return (set[field] !== undefined);
+     };
 
-        for (var i=1;i<arguments.length;i++){
-            field = arguments[i];
-            values.push(set[field] !== undefined ? set[field]:null);
-        }
+     Store.prototype.hkeys = function(key){
+         var set  = this.get(key, {}),
+             keys = [], 
+             name = null;
 
-        return values;
-    };
+         for (name in set) {
+             if (set.hasOwnProperty(name)) {
+                 keys.push(name);
+             }
+         }
 
-    Storage.prototype.hmset = function(key){
-        var set     = this.get(key, {}),
-            field   = null,
-            value   = null;
+         return keys;
+     };
 
-        for (var i=1;i<arguments.length;i++){
-            field = arguments[i];
-            value = arguments[(i + 1)] ? arguments[(i + 1)]:null;
-            set[field] = value;
-            i = i + 1;
-        }
+     Store.prototype.hvals = function(key){
+         var set  = this.get(key, {}),
+             vals = [], 
+             name = null;
 
-        this.set(key, set);
-    };
+         for (name in set) {
+             if (set.hasOwnProperty(name)) {
+                 vals.push(keys[name]);
+             }
+         }
 
-})(this);
+         return vals;
+     };
+
+     Store.prototype.hlen = function(key){
+         return this.hkeys(key).length;
+     };
+
+     Store.prototype.hdel = function(key){
+         
+         if(!this.exists(key)) return 0;
+
+         var set     = this.get(key, {}),
+             field   = null,
+             removed = 0;
+
+         for (var i=1;i<arguments.length;i++){
+
+             field = arguments[i];
+
+             if(set[field] !== undefined){
+                 delete set[field];
+                 removed++;
+             }
+         }
+
+         this.set(key, set);
+
+         return removed;
+     };
+
+     Store.prototype.hincrby = function(key, field, by){
+         by = by || 1;
+         var current = Number(this.hget(key, field, 0)),
+             newone  = current+by;
+
+         this.hset(key, field, newone);
+
+         return newone;
+     };
+
+     Store.prototype.hmget = function(key){
+         var set     = this.get(key, {}),
+             field   = null,
+             values  = [];
+
+         for (var i=1;i<arguments.length;i++){
+             field = arguments[i];
+             values.push(set[field] !== undefined ? set[field]:null);
+         }
+
+         return values;
+     };
+
+     Store.prototype.hmset = function(key){
+         var set     = this.get(key, {}),
+             field   = null,
+             value   = null;
+
+         for (var i=1;i<arguments.length;i++){
+             field = arguments[i];
+             value = arguments[(i + 1)] ? arguments[(i + 1)]:null;
+             set[field] = value;
+             i = i + 1;
+         }
+
+         this.set(key, set);
+     };
+
+     var Storage = {
+
+         "select": function(name, adapter){
+             return (new Store(name, this.adapters[adapter] || this.adapters['memory']));
+         },
+
+         adapters: {
+             'memory': (function(){
+                var dbs = {};
+
+                return {
+                    load  : function(name) { return dbs[name] || {}; },
+                    store : function(name, data) { dbs[name] = data; }
+                }
+             })(),
+             "local": {
+                 load: function(name){
+                     return global.localStorage["storage."+name] ? JSON.parse(global.localStorage["storage."+name]):{};
+                 },
+                 store: function(name, data){
+                     global.localStorage["storage."+name] = JSON.stringify(data);
+                 }
+             },
+             "session": {
+                 load: function(name){
+                     return global.sessionStorage["storage."+name] ? JSON.parse(global.sessionStorage["storage."+name]):{};
+                 },
+                 store: function(name, data){
+                     global.sessionStorage["storage."+name] = JSON.stringify(data);
+                 }
+             }
+         }
+     };
+
+     // AMD support
+     if (typeof define === 'function' && define.amd) {
+         define(function () { return Storage; });
+     // CommonJS and Node.js module support.
+     } else if (typeof exports !== 'undefined') {
+         // Support Node.js specific `module.exports` (which can be a function)
+         if (typeof module != 'undefined' && module.exports) {
+             exports = module.exports = Storage;
+         }
+         // But always support CommonJS module 1.1.1 spec (`exports` cannot be a function)
+         exports.Storage = Storage;
+     } else {
+         window.Storage = Storage;
+     }
+
+ })(this);

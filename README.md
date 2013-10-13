@@ -38,4 +38,14 @@ A simple storage helper inspired by the redis api.
     set, get, exists, del, type, append, incr, decr, 
     llen, lpush, rpush, lset, lindex,
     hset, hget, hgetall, hexists, hkeys, hvals, hlen, hincrby, hmset, hmget
+
+## Adaptars
+
+- memory (default)
+- local   - using window.localStorage
+- session - using window.sessionStorage
+
+    var memory  = Storage.select("mydb"),
+        local   = Storage.select("mydb", "local"),
+        session = Storage.select("mydb", "session");
     
