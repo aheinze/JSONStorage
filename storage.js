@@ -40,7 +40,7 @@
      };
 
      Store.prototype.flushdb = function(){
-         
+
          var $this = this;
 
          this.data    = {};
@@ -74,7 +74,7 @@
      };
 
      Store.prototype.del = function(){
-         
+
          var keys    = arguments,
              key     = null,
              removed = 0;
@@ -100,7 +100,7 @@
      };
 
      Store.prototype.type = function(key){
-         
+
          key = this.get(key);
 
          if(typeof(key) === 'object'){
@@ -111,9 +111,9 @@
      };
 
      Store.prototype.append = function(key, value){
-         
+
          value = String(value);
-         
+
          var current = String(this.get(key, "")),
              newone  = current+value;
 
@@ -123,9 +123,9 @@
      };
 
      Store.prototype.incr = function(key, by){
-         
+
          by = by || 1;
-         
+
          var current = Number(this.get(key, 0)),
              newone  = current+by;
 
@@ -165,7 +165,7 @@
          var list = this.get(key, []);
 
          if(index < 0) {
-             index = list.length - Math.abs(index); 
+             index = list.length - Math.abs(index);
          }
 
          if (list[index]) {
@@ -181,7 +181,7 @@
          var list = this.get(key, []);
 
          if (index < 0) {
-             index = list.length - Math.abs(index); 
+             index = list.length - Math.abs(index);
          }
 
          return list[index] ? list[index] : null;
@@ -214,7 +214,7 @@
 
      Store.prototype.hkeys = function(key){
          var set  = this.get(key, {}),
-             keys = [], 
+             keys = [],
              name = null;
 
          for (name in set) {
@@ -228,7 +228,7 @@
 
      Store.prototype.hvals = function(key){
          var set  = this.get(key, {}),
-             vals = [], 
+             vals = [],
              name = null;
 
          for (name in set) {
@@ -245,7 +245,7 @@
      };
 
      Store.prototype.hdel = function(key){
-         
+
          if(!this.exists(key)) return 0;
 
          var set     = this.get(key, {}),
@@ -351,7 +351,8 @@
          // But always support CommonJS module 1.1.1 spec (`exports` cannot be a function)
          exports.Storage = Storage;
      } else {
-         window.Storage = Storage;
+
+        global.JSONStorage = Storage;
      }
 
  })(this);
