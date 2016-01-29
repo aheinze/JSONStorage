@@ -367,4 +367,4 @@
         global.JSONStorage = JSONStorage;
     }
 
-})(this);
+})(typeof window === 'undefined' ? this : window);
