@@ -7,11 +7,7 @@
     ],
     "ignore": [
         "node_modules",
-        "bower_components",
-        "docs",
-        "vendor",
-        "composer.json",
-        "index.html"
+        "bower_components"
     ],
     "private": false
 }
