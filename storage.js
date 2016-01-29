@@ -315,12 +315,13 @@
 
     var JSONStorage = {
 
-        "select": function(name, adapter) {
-            return (new Store(name, this.adapters[adapter] || this.adapters['memory']));
+        select: function(name, adapter) {
+            return (new Store(name, typeof(adapter)=='object' ? adapter : (this.adapters[adapter] || this.adapters['memory']) ));
         },
 
         adapters: {
-            'memory': (function() {
+
+            memory: (function() {
                 var dbs = {};
 
                 return {
@@ -332,7 +333,8 @@
                     }
                 }
             })(),
-            "local": {
+
+            local: {
                 load: function(name) {
                     return global.localStorage["jsonstorage." + name] ? JSON.parse(global.localStorage["jsonstorage." + name]) : {};
                 },
@@ -340,7 +342,8 @@
                     global.localStorage["jsonstorage." + name] = JSON.stringify(data);
                 }
             },
-            "session": {
+
+            session: {
                 load: function(name) {
                     return global.sessionStorage["jsonstorage." + name] ? JSON.parse(global.sessionStorage["jsonstorage." + name]) : {};
                 },
@@ -365,7 +368,6 @@
         // But always support CommonJS module 1.1.1 spec (`exports` cannot be a function)
         exports.JSONStorage = JSONStorage;
     } else {
-
         global.JSONStorage = JSONStorage;
     }
 
