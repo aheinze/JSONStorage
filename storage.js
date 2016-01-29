@@ -17,7 +17,7 @@
          this.data    = adapter.load(name);
          this.expires = {};
 
-         setInterval(function(){
+         var expire = function(){
 
             var time = (new Date()).getTime();
 
@@ -27,8 +27,12 @@
                     delete $this.expires[key];
                 }
             }
+            
+            return expire;
 
-         }, 60000);
+         };
+
+         setInterval(expire(), 60000);
      }
 
      Store.prototype.store = function(key){
