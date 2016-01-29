@@ -5,7 +5,7 @@ A simple storage helper inspired by the redis api.
 
 # Usage
 
-    var db = Storage.select("mydb");
+    var db = JSONStorage.select("mydb");
 
     db.set("mykey", 1);
     
@@ -45,7 +45,7 @@ A simple storage helper inspired by the redis api.
 - local   - using window.localStorage
 - session - using window.sessionStorage
 
-    var memory  = Storage.select("mydb"),
-        local   = Storage.select("mydb", "local"),
-        session = Storage.select("mydb", "session");
+    var memory  = JSONStorage.select("mydb"),
+        local   = JSONStorage.select("mydb", "local"),
+        session = JSONStorage.select("mydb", "session");
     
