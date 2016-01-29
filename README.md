@@ -35,7 +35,7 @@ A simple storage helper inspired by the redis api.
 
 ## implemented methods
 
-    set, get, exists, del, type, append, incr, decr, 
+    set, setex, get, exists, del, type, append, incr, decr, 
     llen, lpush, rpush, lset, lindex,
     hset, hget, hgetall, hexists, hkeys, hvals, hlen, hincrby, hmset, hmget
 
