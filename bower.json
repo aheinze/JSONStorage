@@ -1,0 +1,17 @@
+{
+    "name": "JSONStorage",
+    "version": "1.0.0",
+    "homepage": "https://github.com/aheinze/JSONStorage",
+    "main": [
+        "storage.js"
+    ],
+    "ignore": [
+        "node_modules",
+        "bower_components",
+        "docs",
+        "vendor",
+        "composer.json",
+        "index.html"
+    ],
+    "private": false
+}
