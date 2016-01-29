@@ -1,4 +1,4 @@
-Storage.js
+JSONStorage
 ==========
 
 A simple storage helper inspired by the redis api.
