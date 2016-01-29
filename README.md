@@ -45,7 +45,8 @@ A simple storage helper inspired by the redis api.
 - local   - using window.localStorage
 - session - using window.sessionStorage
 
-    var memory  = JSONStorage.select("mydb"),
-        local   = JSONStorage.select("mydb", "local"),
-        session = JSONStorage.select("mydb", "session");
-    
+```
+var memory  = JSONStorage.select("mydb"),
+    local   = JSONStorage.select("mydb", "local"),
+    session = JSONStorage.select("mydb", "session");
+```
